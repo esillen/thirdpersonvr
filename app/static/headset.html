@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#05101d" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Third Person View Headset</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/static/headset.css" />
+  </head>
+  <body>
+    <main class="viewer">
+      <div class="topbar">
+        <div>
+          <div class="eyebrow">Headset view</div>
+          <div id="cameraName" class="title">Loading camera...</div>
+        </div>
+        <div id="cameraState" class="badge">Connecting</div>
+      </div>
+      <div id="streamShell" class="stream-shell">
+        <img id="streamFrame" alt="Selected camera stream" />
+        <div id="streamFallback" class="fallback">
+          Waiting for the selected camera stream.
+        </div>
+      </div>
+      <div class="footer">
+        <span id="zoneHint">Watching the active camera from the server.</span>
+        <button id="fullscreenButton" class="ghost">Fullscreen</button>
+      </div>
+    </main>
+    <script src="/static/headset.js" type="module"></script>
+  </body>
+</html>

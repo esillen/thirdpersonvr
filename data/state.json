@@ -1,0 +1,94 @@
+{
+  "cameras": [
+    {
+      "id": "cam-a",
+      "name": "Camera A",
+      "streamUrl": "",
+      "previewMode": "placeholder",
+      "position": {
+        "x": 0,
+        "y": 2.4,
+        "z": 0
+      },
+      "color": "#f97316"
+    },
+    {
+      "id": "cam-b",
+      "name": "Camera B",
+      "streamUrl": "",
+      "previewMode": "placeholder",
+      "position": {
+        "x": 6,
+        "y": 2.4,
+        "z": 0
+      },
+      "color": "#38bdf8"
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-a-exclusive",
+      "name": "Camera A exclusive",
+      "type": "exclusive",
+      "cameras": [
+        "cam-a"
+      ],
+      "box": {
+        "minX": -4,
+        "maxX": 1.5,
+        "minY": 0,
+        "maxY": 3,
+        "minZ": -2.5,
+        "maxZ": 2.5
+      }
+    },
+    {
+      "id": "zone-ab-overlap",
+      "name": "A/B overlap",
+      "type": "overlap",
+      "cameras": [
+        "cam-a",
+        "cam-b"
+      ],
+      "box": {
+        "minX": 1.5,
+        "maxX": 4.5,
+        "minY": 0,
+        "maxY": 3,
+        "minZ": -2.5,
+        "maxZ": 2.5
+      }
+    },
+    {
+      "id": "zone-b-exclusive",
+      "name": "Camera B exclusive",
+      "type": "exclusive",
+      "cameras": [
+        "cam-b"
+      ],
+      "box": {
+        "minX": 4.5,
+        "maxX": 10,
+        "minY": 0,
+        "maxY": 3,
+        "minZ": -2.5,
+        "maxZ": 2.5
+      }
+    }
+  ],
+  "person": {
+    "x": 0,
+    "y": 1.7,
+    "z": 0,
+    "confidence": 1,
+    "source": "manual"
+  },
+  "activeCameraId": "cam-a",
+  "lastSwitchAt": 0,
+  "lastSwitchReason": "initial",
+  "history": [],
+  "settings": {
+    "switchCooldownMs": 700,
+    "idleFallbackCameraId": "cam-a"
+  }
+}

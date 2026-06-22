@@ -1,0 +1,344 @@
+:root {
+  color-scheme: dark;
+  --bg: #07111d;
+  --panel: rgba(12, 22, 36, 0.84);
+  --panel-strong: rgba(15, 28, 46, 0.96);
+  --line: rgba(168, 203, 255, 0.14);
+  --text: #ebf2ff;
+  --muted: #9bb0ca;
+  --accent: #78c8ff;
+  --accent-2: #8ef0b8;
+  --danger: #ff7e7e;
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(71, 132, 255, 0.26), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(68, 242, 182, 0.14), transparent 30%),
+    linear-gradient(180deg, #05101d 0%, #07111d 100%);
+  color: var(--text);
+}
+
+.background {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent 95%);
+  opacity: 0.35;
+}
+
+.shell {
+  width: min(1600px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 24px 0 40px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(36px, 4vw, 66px);
+  line-height: 0.98;
+}
+
+.lede {
+  max-width: 68ch;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.status-panel {
+  display: grid;
+  gap: 10px;
+  min-width: 280px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.status-panel .label {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.status-panel strong {
+  font-size: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 18px;
+}
+
+.card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  overflow: hidden;
+}
+
+.card.wide {
+  grid-column: 1 / 2;
+}
+
+.card.full {
+  grid-column: 1 / -1;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.card-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button.primary {
+  background: linear-gradient(135deg, #68c6ff, #8ef0b8);
+  color: #04111a;
+  font-weight: 700;
+}
+
+button.ghost {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+#mapCanvas {
+  width: 100%;
+  height: 420px;
+  display: block;
+  border-radius: 18px;
+  background: rgba(5, 11, 19, 0.9);
+  border: 1px solid rgba(168, 203, 255, 0.12);
+}
+
+.range-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.range-row label,
+.form-stack label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  border-radius: 14px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 12px 14px;
+}
+
+textarea {
+  min-height: 170px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.form-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.hint {
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: rgba(120, 200, 255, 0.12);
+  border: 1px solid rgba(120, 200, 255, 0.2);
+  color: #d7efff;
+  font-size: 12px;
+}
+
+.signal-list,
+.history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.signal {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+
+.signal .meta,
+.history-item .meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.camera-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.camera-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+
+.camera-preview {
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(120, 200, 255, 0.13), rgba(142, 240, 184, 0.08));
+  display: grid;
+  place-items: center;
+  color: rgba(235, 242, 255, 0.84);
+  font-size: 13px;
+  text-align: center;
+  padding: 16px;
+}
+
+.camera-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.camera-info {
+  padding: 12px 14px 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.camera-info strong {
+  font-size: 15px;
+}
+
+.camera-info span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.history-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 1150px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card.wide,
+  .card.full {
+    grid-column: auto;
+  }
+
+  .hero {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(100vw - 20px, 1600px);
+  }
+
+  .camera-grid,
+  .range-row {
+    grid-template-columns: 1fr;
+  }
+}

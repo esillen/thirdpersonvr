@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Third Person View Monitor</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="background"></div>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Monitor client</p>
+          <h1>See the room and control the zones.</h1>
+          <p class="lede">
+            This client is for monitoring, calibration, and control. The headset gets only the selected camera stream.
+            The server needs <code>ffmpeg</code> for live previews and the marker scan loop.
+          </p>
+        </div>
+        <div class="status-panel">
+          <div>
+            <span class="label">Active camera</span>
+            <strong id="activeCamera">-</strong>
+          </div>
+          <div>
+            <span class="label">Position</span>
+            <strong id="personPosition">-</strong>
+          </div>
+          <div>
+            <span class="label">Mode</span>
+            <strong id="modeState">-</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="grid">
+        <article class="card wide">
+          <div class="card-head">
+            <h2>Room map</h2>
+            <div class="card-actions">
+              <button id="resetDemo" class="ghost">Reset demo</button>
+              <button id="nudgeLeft" class="ghost">Left</button>
+              <button id="nudgeRight" class="ghost">Right</button>
+              <button id="nudgeForward" class="ghost">Forward</button>
+              <button id="nudgeBack" class="ghost">Back</button>
+            </div>
+          </div>
+          <canvas id="mapCanvas" width="1200" height="560"></canvas>
+          <div class="range-row">
+            <label>
+              X
+              <input id="xRange" type="range" min="-5" max="10" step="0.05" value="0" />
+            </label>
+            <label>
+              Z
+              <input id="zRange" type="range" min="-4" max="4" step="0.05" value="0" />
+            </label>
+            <label>
+              Y
+              <input id="yRange" type="range" min="0" max="3" step="0.05" value="1.7" />
+            </label>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h2>Configuration</h2>
+            <div class="card-actions">
+              <button id="printMarker" class="ghost">Print marker</button>
+              <button id="saveConfig" class="primary">Save</button>
+            </div>
+          </div>
+          <div class="form-stack">
+            <label>
+              Switch cooldown ms
+              <input id="switchCooldown" type="number" min="0" step="50" />
+            </label>
+            <label>
+              Idle fallback camera
+              <select id="idleFallback"></select>
+            </label>
+            <label>
+              AprilTag family
+              <input id="apriltagFamily" type="text" />
+            </label>
+            <label>
+              Scan interval seconds
+              <input id="apriltagScanInterval" type="number" min="0.1" step="0.1" />
+            </label>
+            <div class="two-col">
+              <label>
+                Capture width
+                <input id="apriltagCaptureWidth" type="number" min="64" step="1" />
+              </label>
+              <label>
+                Capture height
+                <input id="apriltagCaptureHeight" type="number" min="64" step="1" />
+              </label>
+            </div>
+            <label>
+              Min decision margin
+              <input id="apriltagMinDecisionMargin" type="number" min="0" step="0.1" />
+            </label>
+            <label>
+              Cameras JSON
+              <textarea id="camerasJson" spellcheck="false"></textarea>
+            </label>
+            <label>
+              Zones JSON
+              <textarea id="zonesJson" spellcheck="false"></textarea>
+            </label>
+          </div>
+          <p class="hint">
+            Use the JSON editor for fast prototype edits. The switcher is overlap aware and keeps
+            the current camera until you leave the overlap into the next exclusive zone.
+          </p>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h2>Signals</h2>
+            <span class="pill" id="ffmpegState">ffmpeg: -</span>
+          </div>
+          <div id="signalList" class="signal-list"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h2>Camera feeds</h2>
+            <span class="pill">LAN previews</span>
+          </div>
+          <div id="cameraGrid" class="camera-grid"></div>
+        </article>
+
+        <article class="card full">
+          <div class="card-head">
+            <h2>Event log</h2>
+            <span class="pill">Latest 100</span>
+          </div>
+          <div id="historyList" class="history-list"></div>
+        </article>
+      </section>
+    </main>
+    <script src="/static/monitor.js" type="module"></script>
+  </body>
+</html>

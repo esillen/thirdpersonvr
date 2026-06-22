@@ -1,0 +1,10 @@
+{
+  "name": "Third Person View Headset",
+  "short_name": "Third View",
+  "start_url": "/headset",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#02070d",
+  "theme_color": "#05101d",
+  "icons": []
+}

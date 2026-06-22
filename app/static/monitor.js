@@ -1,36 +1,12 @@
 const els = {
   activeCamera: document.getElementById("activeCamera"),
-  personPosition: document.getElementById("personPosition"),
-  modeState: document.getElementById("modeState"),
+  lastSwitch: document.getElementById("lastSwitch"),
   ffmpegState: document.getElementById("ffmpegState"),
-  mapCanvas: document.getElementById("mapCanvas"),
-  signalList: document.getElementById("signalList"),
-  cameraGrid: document.getElementById("cameraGrid"),
-  historyList: document.getElementById("historyList"),
-  camerasJson: document.getElementById("camerasJson"),
-  zonesJson: document.getElementById("zonesJson"),
-  switchCooldown: document.getElementById("switchCooldown"),
-  idleFallback: document.getElementById("idleFallback"),
-  apriltagFamily: document.getElementById("apriltagFamily"),
-  apriltagScanInterval: document.getElementById("apriltagScanInterval"),
-  apriltagCaptureWidth: document.getElementById("apriltagCaptureWidth"),
-  apriltagCaptureHeight: document.getElementById("apriltagCaptureHeight"),
-  apriltagMinDecisionMargin: document.getElementById("apriltagMinDecisionMargin"),
-  xRange: document.getElementById("xRange"),
-  yRange: document.getElementById("yRange"),
-  zRange: document.getElementById("zRange"),
-  printMarker: document.getElementById("printMarker"),
-  saveConfig: document.getElementById("saveConfig"),
-  resetDemo: document.getElementById("resetDemo"),
-  nudgeLeft: document.getElementById("nudgeLeft"),
-  nudgeRight: document.getElementById("nudgeRight"),
-  nudgeForward: document.getElementById("nudgeForward"),
-  nudgeBack: document.getElementById("nudgeBack")
+  cameraGrid: document.getElementById("cameraGrid")
 };
 
-const ctx = els.mapCanvas.getContext("2d");
 let state = null;
-let renderQueued = false;
+let initialRenderDone = false;
 
 const format = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",
@@ -38,357 +14,195 @@ const format = new Intl.DateTimeFormat(undefined, {
   second: "2-digit"
 });
 
+const slotDefinitions = [
+  { id: "cam-a", label: "Camera 1" },
+  { id: "cam-b", label: "Camera 2" }
+];
+
 async function request(path, options = {}) {
   const response = await fetch(path, {
     headers: { "content-type": "application/json" },
     ...options
   });
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    const message = await response.text().catch(() => "");
+    throw new Error(message || `${response.status} ${response.statusText}`);
   }
   return response.json();
 }
 
-function queueRender() {
-  if (renderQueued) return;
-  renderQueued = true;
-  requestAnimationFrame(() => {
-    renderQueued = false;
-    render();
-  });
+function fallbackCamera(slot) {
+  return {
+    id: slot.id,
+    name: slot.label,
+    stream_url: "",
+    preview_mode: "placeholder"
+  };
 }
 
-function currentCamera() {
-  return state?.cameras?.find((camera) => camera.id === state.active_camera_id) ?? null;
+function cameraBySlot(slotId) {
+  const slot = slotDefinitions.find((candidate) => candidate.id === slotId) ?? { id: slotId, label: slotId };
+  return state?.cameras?.find((camera) => camera.id === slotId) ?? fallbackCamera(slot);
 }
 
-function updatePersonInputs(person) {
-  els.xRange.value = String(person.x);
-  els.yRange.value = String(person.y);
-  els.zRange.value = String(person.z);
+function previewMarkup(camera) {
+  const source = camera.stream_url && state.ffmpeg_available ? `/api/cameras/${camera.id}/preview.mjpg` : "";
+  return {
+    source,
+    html:
+      source
+        ? `<img src="${source}" alt="${camera.name} live preview" />`
+        : `
+          <div class="camera-preview empty">
+            <div>
+              <strong>No live preview yet</strong>
+              <div>Paste the stream address below, then apply it to the headset.</div>
+            </div>
+          </div>
+        `
+  };
 }
 
-function syncConfigEditors() {
-  els.switchCooldown.value = String(state.settings?.switch_cooldown_ms ?? 700);
-  els.camerasJson.value = JSON.stringify(state.cameras ?? [], null, 2);
-  els.zonesJson.value = JSON.stringify(state.zones ?? [], null, 2);
-  els.apriltagFamily.value = state.settings?.apriltag_family ?? "tagStandard41h12";
-  els.apriltagScanInterval.value = String(state.settings?.apriltag_scan_interval_s ?? 1.0);
-  els.apriltagCaptureWidth.value = String(state.settings?.apriltag_capture_width ?? 640);
-  els.apriltagCaptureHeight.value = String(state.settings?.apriltag_capture_height ?? 360);
-  els.apriltagMinDecisionMargin.value = String(state.settings?.apriltag_min_decision_margin ?? 20.0);
-  els.idleFallback.innerHTML = (state.cameras ?? [])
-    .map((camera) => `<option value="${camera.id}">${camera.name}</option>`)
-    .join("");
-  els.idleFallback.value = state.settings?.idle_fallback_camera_id ?? state.active_camera_id ?? "";
+function cameraStatus(cameraId) {
+  return state?.camera_statuses?.[cameraId] ?? null;
 }
 
-function renderSignals() {
-  const pieces = [];
-  pieces.push({
-    title: "Switch rule",
-    value: "Server scans all cameras, last marker seen wins",
-    meta: "The server checks each camera stream every second and stores the freshest detection."
-  });
-  pieces.push({
-    title: "Person source",
-    value: `${state.person.source ?? "manual"} ${state.person.confidence ? `(conf ${state.person.confidence})` : ""}`,
-    meta: `position ${state.person.x.toFixed(2)}, ${state.person.y.toFixed(2)}, ${state.person.z.toFixed(2)}`
-  });
-  pieces.push({
-    title: "Switch cooldown",
-    value: `${state.settings?.switch_cooldown_ms ?? 700} ms`,
-    meta: `fallback camera: ${state.settings?.idle_fallback_camera_id ?? "-"}`
-  });
-  pieces.push({
-    title: "Marker",
-    value: `${state.marker?.last_marker_id ?? "head-marker"}`,
-    meta: `last seen by ${state.marker?.last_camera_id ?? "-"} at ${
-      state.marker?.last_detected_at ? format.format(new Date(state.marker.last_detected_at * 1000)) : "never"
-    }`
-  });
-  pieces.push({
-    title: "Scanner",
-    value: state.marker_scan?.running ? "running" : "idle",
-    meta: `family: ${state.settings?.apriltag_family ?? "tagStandard41h12"}, capture: ${
-      state.settings?.apriltag_capture_width ?? 640
-    }x${state.settings?.apriltag_capture_height ?? 360}, margin >= ${
-      state.settings?.apriltag_min_decision_margin ?? 20
-    }`
-  });
+function cameraStatusLabel(cameraId) {
+  const status = cameraStatus(cameraId);
+  if (!status || status.reachable === undefined) {
+    return "Not checked";
+  }
+  if (status.reachable) {
+    return status.transport ? `Found via ${status.transport}` : "Found";
+  }
+  return status.error ? `Not found: ${status.error}` : "Not found";
+}
 
-  els.signalList.innerHTML = pieces
-    .map(
-      (piece) => `
-        <div class="signal">
-          <strong>${piece.title}</strong>
-          <div>${piece.value}</div>
-          <div class="meta">${piece.meta}</div>
-        </div>`
-    )
-    .join("");
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function renderCameraGrid() {
-  els.cameraGrid.innerHTML = (state.cameras ?? [])
-    .map((camera) => {
+  els.cameraGrid.innerHTML = slotDefinitions
+    .map((slot) => {
+      const camera = cameraBySlot(slot.id);
+      const preview = previewMarkup(camera);
       const active = camera.id === state.active_camera_id;
-      const preview =
-        camera.stream_url && state.ffmpeg_available
-          ? `<img src="/api/cameras/${camera.id}/preview.mjpg" alt="${camera.name} live preview" />`
-          : `<div class="camera-preview">No preview yet<br/>Add an RTSP URL and make sure ffmpeg is installed on the server.</div>`;
-      const marker = state.marker_detections?.[camera.id];
-      const markerLine = marker
-        ? `marker: ${marker.marker_id} · ${Math.round((marker.confidence ?? 0) * 100)}% · ${format.format(
-            new Date(marker.detected_at * 1000)
-          )}`
-        : "marker: none yet";
       return `
-        <section class="camera-card">
-          <div class="camera-preview">${preview}</div>
+        <section class="camera-card" data-camera-id="${camera.id}">
+          <div class="camera-preview-wrap" data-preview-source="${escapeHtml(preview.source)}">
+            ${preview.html}
+          </div>
           <div class="camera-info">
-            <strong>${camera.name}${active ? " (active)" : ""}</strong>
-            <span>${camera.id}</span>
-            <span>stream: ${camera.stream_url || "not set"}</span>
-            <span>position: ${camera.position_x.toFixed(2)}, ${camera.position_y.toFixed(2)}, ${camera.position_z.toFixed(2)}</span>
-            <span>${markerLine}</span>
-            <button class="ghost marker-hit" data-camera-id="${camera.id}">Simulate marker seen here</button>
+            <div class="camera-card-head">
+              <strong>${slot.label}${active ? " · active" : ""}</strong>
+              <span>${camera.id}</span>
+            </div>
+            <div class="camera-status">${cameraStatusLabel(camera.id)}</div>
+            <label>
+              Name
+              <input data-field="name" value="${escapeHtml(camera.name || slot.label)}" />
+            </label>
+            <label>
+              Stream URL
+              <input
+                data-field="stream_url"
+                value="${escapeHtml(camera.stream_url || "")}"
+                placeholder="rtsp://192.168.1.10:554/stream1"
+              />
+            </label>
+            <div class="camera-actions">
+              <button class="primary apply-camera" data-camera-id="${camera.id}">
+                ${active ? "Showing on headset" : "Save & show on headset"}
+              </button>
+            </div>
           </div>
         </section>
       `;
     })
     .join("");
+  initialRenderDone = true;
 }
 
-function renderHistory() {
-  const items = (state.history ?? []).slice().reverse().slice(0, 100);
-  els.historyList.innerHTML = items
-    .map((item) => {
-      const time = format.format(new Date(item.at * 1000));
-      const detail =
-        item.type === "switch"
-          ? `switched to ${item.camera_id} because ${item.reason}`
-          : item.type === "person"
-            ? `person moved to ${item.position.x.toFixed(2)}, ${item.position.y.toFixed(2)}, ${item.position.z.toFixed(2)}`
-            : item.type === "camera"
-              ? `camera ${item.camera_id} saved`
-              : item.type === "zone"
-                ? `zone ${item.zone_id} saved`
-                : item.reason || item.type;
-      return `
-        <div class="history-item">
-          <div>
-            <strong>${item.type}</strong>
-            <div class="meta">${detail}</div>
-          </div>
-          <div class="meta">${time}</div>
-        </div>
-      `;
-    })
-    .join("");
+function updateStatus() {
+  const active = state?.cameras?.find((camera) => camera.id === state.active_camera_id);
+  els.activeCamera.textContent = active?.name || state?.active_camera_id || "-";
+  els.lastSwitch.textContent = state?.last_switch_at ? format.format(new Date(state.last_switch_at)) : "never";
+  els.ffmpegState.textContent = state?.ffmpeg_available ? "ffmpeg ready" : "ffmpeg missing";
 }
 
-function renderMap() {
-  const canvas = els.mapCanvas;
-  const width = canvas.width;
-  const height = canvas.height;
-  const margin = 46;
-  const world = {
-    minX: -5,
-    maxX: 10,
-    minZ: -4,
-    maxZ: 4
-  };
-
-  const toCanvas = (x, z) => ({
-    x: margin + ((x - world.minX) / (world.maxX - world.minX)) * (width - margin * 2),
-    y: height - margin - ((z - world.minZ) / (world.maxZ - world.minZ)) * (height - margin * 2)
-  });
-
-  ctx.clearRect(0, 0, width, height);
-
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "rgba(12, 24, 40, 1)");
-  gradient.addColorStop(1, "rgba(5, 11, 19, 1)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.strokeStyle = "rgba(255,255,255,0.06)";
-  for (let i = 0; i <= 10; i += 1) {
-    const x = margin + (i / 10) * (width - margin * 2);
-    ctx.beginPath();
-    ctx.moveTo(x, margin);
-    ctx.lineTo(x, height - margin);
-    ctx.stroke();
+function updateActiveCards() {
+  if (!initialRenderDone) return;
+  for (const slot of slotDefinitions) {
+    const camera = cameraBySlot(slot.id);
+    const card = els.cameraGrid.querySelector(`[data-camera-id="${camera.id}"]`);
+    if (!card) continue;
+    const heading = card.querySelector(".camera-card-head strong");
+    const status = card.querySelector(".camera-status");
+    const button = card.querySelector("button.apply-camera");
+    if (heading) {
+      heading.textContent = `${slot.label}${camera.id === state.active_camera_id ? " · active" : ""}`;
+    }
+    if (button) {
+      button.disabled = camera.id === state.active_camera_id;
+      button.textContent = camera.id === state.active_camera_id ? "Showing on headset" : "Save & show on headset";
+    }
+    if (status) {
+      status.textContent = cameraStatusLabel(camera.id);
+    }
+    const previewWrap = card.querySelector(".camera-preview-wrap");
+    if (previewWrap) {
+      const preview = previewMarkup(camera);
+      if (previewWrap.dataset.previewSource !== preview.source) {
+        previewWrap.dataset.previewSource = preview.source;
+        previewWrap.innerHTML = preview.html;
+      }
+    }
   }
-  for (let i = 0; i <= 8; i += 1) {
-    const y = margin + (i / 8) * (height - margin * 2);
-    ctx.beginPath();
-    ctx.moveTo(margin, y);
-    ctx.lineTo(width - margin, y);
-    ctx.stroke();
-  }
-
-  const roomRect = toCanvas(world.minX, world.minZ);
-  const roomWidth = toCanvas(world.maxX, world.maxZ).x - roomRect.x;
-  const roomHeight = roomRect.y - toCanvas(world.maxX, world.maxZ).y;
-  ctx.strokeStyle = "rgba(142,240,184,0.25)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(roomRect.x, toCanvas(world.maxX, world.maxZ).y, roomWidth, roomHeight);
-
-  for (const zone of state.zones ?? []) {
-    const a = toCanvas(zone.box.min_x, zone.box.max_z);
-    const b = toCanvas(zone.box.max_x, zone.box.min_z);
-    const fill =
-      zone.type === "overlap"
-        ? "rgba(120,200,255,0.16)"
-        : zone.cameras?.[0] === state.active_camera_id
-          ? "rgba(142,240,184,0.18)"
-          : "rgba(255,255,255,0.08)";
-    ctx.fillStyle = fill;
-    ctx.strokeStyle = zone.type === "overlap" ? "rgba(120,200,255,0.7)" : "rgba(255,255,255,0.35)";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.rect(a.x, a.y, b.x - a.x, b.y - a.y);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#eaf4ff";
-    ctx.font = "13px ui-sans-serif, system-ui";
-    ctx.fillText(zone.name, a.x + 10, a.y + 20);
-  }
-
-  for (const camera of state.cameras ?? []) {
-    const p = toCanvas(camera.position_x, camera.position_z);
-    ctx.fillStyle = camera.color || "#78c8ff";
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, camera.id === state.active_camera_id ? 8 : 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#eaf4ff";
-    ctx.fillText(camera.name, p.x + 10, p.y - 10);
-  }
-
-  const person = toCanvas(state.person.x, state.person.z);
-  ctx.fillStyle = "#ff8f6b";
-  ctx.beginPath();
-  ctx.arc(person.x, person.y, 10, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255,143,107,0.6)";
-  ctx.beginPath();
-  ctx.arc(person.x, person.y, 20, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = "#fff6ef";
-  ctx.fillText("You", person.x + 16, person.y + 4);
 }
 
-function render() {
-  if (!state) return;
-  const active = currentCamera();
-  els.activeCamera.textContent = active ? active.name : "-";
-  els.personPosition.textContent = `${state.person.x.toFixed(2)}, ${state.person.y.toFixed(2)}, ${state.person.z.toFixed(2)}`;
-  els.modeState.textContent = state.last_switch_reason || "ready";
-  els.ffmpegState.textContent = state.ffmpeg_available ? "ffmpeg: ready on server" : "ffmpeg: missing on server";
-  updatePersonInputs(state.person);
-  renderSignals();
-  renderCameraGrid();
-  renderHistory();
-  syncConfigEditors();
-  renderMap();
-}
-
-async function loadState() {
+async function loadState({ rerender = false } = {}) {
   state = await request("/api/state");
-  queueRender();
+  updateStatus();
+  if (rerender || !initialRenderDone) {
+    renderCameraGrid();
+  } else {
+    updateActiveCards();
+  }
 }
 
-async function sendPersonDelta(dx, dz) {
-  const next = {
-    x: Number(state.person.x + dx),
-    y: Number(state.person.y),
-    z: Number(state.person.z + dz),
-    confidence: state.person.confidence,
-    source: "manual"
+function readCameraForm(cameraId) {
+  const card = els.cameraGrid.querySelector(`[data-camera-id="${cameraId}"]`);
+  if (!card) return null;
+  const name = card.querySelector('[data-field="name"]')?.value.trim() || "Camera";
+  const streamUrl = card.querySelector('[data-field="stream_url"]')?.value.trim() || "";
+  return {
+    id: cameraId,
+    name,
+    stream_url: streamUrl,
+    preview_mode: streamUrl ? "mjpeg" : "placeholder"
   };
-  await request("/api/person", {
-    method: "POST",
-    body: JSON.stringify(next)
-  });
-  await loadState();
 }
 
-async function saveConfig() {
-  const settings = {
-    switch_cooldown_ms: Number(els.switchCooldown.value || 700),
-    idle_fallback_camera_id: els.idleFallback.value,
-    apriltag_family: els.apriltagFamily.value.trim() || "tagStandard41h12",
-    apriltag_scan_interval_s: Number(els.apriltagScanInterval.value || 1.0),
-    apriltag_capture_width: Number(els.apriltagCaptureWidth.value || 640),
-    apriltag_capture_height: Number(els.apriltagCaptureHeight.value || 360),
-    apriltag_min_decision_margin: Number(els.apriltagMinDecisionMargin.value || 20.0)
-  };
-  const cameras = JSON.parse(els.camerasJson.value);
-  const zones = JSON.parse(els.zonesJson.value);
-
-  await request("/api/settings", {
+async function saveAndShow(cameraId) {
+  const payload = readCameraForm(cameraId);
+  if (!payload) return;
+  await request(`/api/cameras/${cameraId}/activate`, {
     method: "POST",
-    body: JSON.stringify(settings)
+    body: JSON.stringify(payload)
   });
-  await request("/api/seed", {
-    method: "POST",
-    body: JSON.stringify({ cameras, zones })
-  });
-  await loadState();
+  await loadState({ rerender: true });
 }
 
 function bindControls() {
-  const updateFromSlider = async () => {
-    const next = {
-      x: Number(els.xRange.value),
-      y: Number(els.yRange.value),
-      z: Number(els.zRange.value),
-      confidence: state.person.confidence,
-      source: "manual"
-    };
-    await request("/api/person", { method: "POST", body: JSON.stringify(next) });
-    await loadState();
-  };
-
-  els.xRange.addEventListener("input", updateFromSlider);
-  els.yRange.addEventListener("input", updateFromSlider);
-  els.zRange.addEventListener("input", updateFromSlider);
-
-  els.saveConfig.addEventListener("click", () => {
-    saveConfig().catch((error) => {
-      alert(`Save failed: ${error.message}`);
-    });
-  });
-
-  els.printMarker.addEventListener("click", () => {
-    window.open("/marker-sheet", "_blank", "noopener");
-  });
-
-  els.resetDemo.addEventListener("click", async () => {
-    await request("/api/reset", { method: "POST", body: "{}" });
-    await loadState();
-  });
-
-  els.nudgeLeft.addEventListener("click", () => sendPersonDelta(-0.35, 0).catch(reportError));
-  els.nudgeRight.addEventListener("click", () => sendPersonDelta(0.35, 0).catch(reportError));
-  els.nudgeForward.addEventListener("click", () => sendPersonDelta(0, 0.35).catch(reportError));
-  els.nudgeBack.addEventListener("click", () => sendPersonDelta(0, -0.35).catch(reportError));
-
-  els.cameraGrid.addEventListener("click", async (event) => {
-    const button = event.target.closest("button.marker-hit");
-    if (!button) return;
-    const cameraId = button.dataset.cameraId;
-    try {
-      await request("/api/marker-detection", {
-        method: "POST",
-        body: JSON.stringify({ camera_id: cameraId, marker_id: "head-marker", confidence: 1, source: "manual-sim" })
-      });
-      await loadState();
-    } catch (error) {
-      reportError(error);
-    }
+  els.cameraGrid.addEventListener("click", (event) => {
+    const applyButton = event.target.closest("button.apply-camera");
+    if (!applyButton) return;
+    saveAndShow(applyButton.dataset.cameraId).catch(reportError);
   });
 }
 
@@ -397,11 +211,12 @@ function reportError(error) {
 }
 
 bindControls();
+
 async function init() {
-  await loadState();
+  await loadState({ rerender: true });
   setInterval(() => {
     loadState().catch(() => {});
-  }, 1000);
+  }, 1500);
 }
 
 init().catch((error) => {

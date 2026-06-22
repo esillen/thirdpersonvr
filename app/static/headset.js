@@ -10,6 +10,7 @@ const els = {
 
 let activeCameraId = null;
 let activeCameraName = null;
+let activeCameraStreamUrl = null;
 
 async function request(path) {
   const response = await fetch(path);
@@ -27,6 +28,7 @@ function setStream(camera) {
     : "";
   activeCameraId = camera.id;
   activeCameraName = camera.name;
+  activeCameraStreamUrl = camera.stream_url || "";
   els.cameraName.textContent = camera.name;
   els.cameraState.textContent = camera.stream_url ? "Live" : "No stream";
   els.zoneHint.textContent = `Showing ${camera.name} from the server-selected camera.`;
@@ -49,7 +51,11 @@ async function loadActiveCamera() {
       els.cameraState.textContent = "No camera";
       return;
     }
-    if (camera.id !== activeCameraId || camera.name !== activeCameraName) {
+    if (
+      camera.id !== activeCameraId ||
+      camera.name !== activeCameraName ||
+      (camera.stream_url || "") !== activeCameraStreamUrl
+    ) {
       setStream(camera);
     }
     if (!camera.stream_url) {
@@ -59,20 +65,6 @@ async function loadActiveCamera() {
     els.cameraState.textContent = "Disconnected";
     els.zoneHint.textContent = error.message;
   }
-}
-
-function connectStateFeed() {
-  const source = new EventSource("/events");
-  source.addEventListener("state", (event) => {
-    const state = JSON.parse(event.data);
-    const camera = state.cameras.find((item) => item.id === state.active_camera_id);
-    if (camera) {
-      setStream(camera);
-    }
-  });
-  source.onerror = () => {
-    els.cameraState.textContent = "Reconnecting";
-  };
 }
 
 async function goFullscreen() {
@@ -92,7 +84,6 @@ if ("serviceWorker" in navigator) {
 
 async function init() {
   await loadActiveCamera();
-  connectStateFeed();
   setInterval(() => {
     loadActiveCamera().catch(() => {});
   }, 1500);

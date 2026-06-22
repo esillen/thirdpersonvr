@@ -3,26 +3,14 @@
     {
       "id": "cam-a",
       "name": "Camera A",
-      "streamUrl": "",
-      "previewMode": "placeholder",
-      "position": {
-        "x": 0,
-        "y": 2.4,
-        "z": 0
-      },
-      "color": "#f97316"
+      "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+      "preview_mode": "mjpeg"
     },
     {
       "id": "cam-b",
       "name": "Camera B",
-      "streamUrl": "",
-      "previewMode": "placeholder",
-      "position": {
-        "x": 6,
-        "y": 2.4,
-        "z": 0
-      },
-      "color": "#38bdf8"
+      "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+      "preview_mode": "mjpeg"
     }
   ],
   "zones": [
@@ -34,12 +22,12 @@
         "cam-a"
       ],
       "box": {
-        "minX": -4,
-        "maxX": 1.5,
-        "minY": 0,
-        "maxY": 3,
-        "minZ": -2.5,
-        "maxZ": 2.5
+        "min_x": -4.0,
+        "max_x": 1.5,
+        "min_y": 0.0,
+        "max_y": 3.0,
+        "min_z": -2.5,
+        "max_z": 2.5
       }
     },
     {
@@ -51,12 +39,12 @@
         "cam-b"
       ],
       "box": {
-        "minX": 1.5,
-        "maxX": 4.5,
-        "minY": 0,
-        "maxY": 3,
-        "minZ": -2.5,
-        "maxZ": 2.5
+        "min_x": 1.5,
+        "max_x": 4.5,
+        "min_y": 0.0,
+        "max_y": 3.0,
+        "min_z": -2.5,
+        "max_z": 2.5
       }
     },
     {
@@ -67,28 +55,642 @@
         "cam-b"
       ],
       "box": {
-        "minX": 4.5,
-        "maxX": 10,
-        "minY": 0,
-        "maxY": 3,
-        "minZ": -2.5,
-        "maxZ": 2.5
+        "min_x": 4.5,
+        "max_x": 10.0,
+        "min_y": 0.0,
+        "max_y": 3.0,
+        "min_z": -2.5,
+        "max_z": 2.5
       }
     }
   ],
   "person": {
-    "x": 0,
+    "x": 5.599999999999999,
     "y": 1.7,
-    "z": 0,
-    "confidence": 1,
+    "z": 0.0,
+    "confidence": 1.0,
     "source": "manual"
   },
-  "activeCameraId": "cam-a",
-  "lastSwitchAt": 0,
-  "lastSwitchReason": "initial",
-  "history": [],
   "settings": {
-    "switchCooldownMs": 700,
-    "idleFallbackCameraId": "cam-a"
-  }
+    "switch_cooldown_ms": 700,
+    "idle_fallback_camera_id": "cam-a"
+  },
+  "active_camera_id": "cam-a",
+  "last_switch_at": 1782160949877.476,
+  "last_switch_reason": "manual-select",
+  "camera_statuses": {
+    "cam-b": {
+      "camera_id": "cam-b",
+      "reachable": false,
+      "checked_at": 1782162398.433902,
+      "error": "auto: [tcp @ 0xafec24000] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host; udp: [tcp @ 0xafd003480] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host; tcp: [tcp @ 0xc1b003480] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host",
+      "transport": ""
+    }
+  },
+  "history": [
+    {
+      "id": "evt-1782159199369",
+      "at": 1782159199.369334,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 0.35,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159200178",
+      "at": 1782159200.178188,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 0.0,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159200618",
+      "at": 1782159200.6186612,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 0.35,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159200953",
+      "at": 1782159200.953307,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 0.7,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159201118",
+      "at": 1782159201.118583,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 1.0499999999999998,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159201310",
+      "at": 1782159201.3108191,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 1.4,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159201627",
+      "at": 1782159201.62738,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 1.75,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159201826",
+      "at": 1782159201.8265128,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 2.1,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159201993",
+      "at": 1782159201.993255,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 2.45,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159202151",
+      "at": 1782159202.151137,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 2.8000000000000003,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159202291",
+      "at": 1782159202.291879,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 3.1500000000000004,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159202466",
+      "at": 1782159202.466862,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 3.5000000000000004,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159202626",
+      "at": 1782159202.626442,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 3.8500000000000005,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159202827",
+      "at": 1782159202.827889,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 4.2,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159203152",
+      "at": 1782159203.152361,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 4.55,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159203584",
+      "at": 1782159203.584598,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 4.8999999999999995,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159204084",
+      "at": 1782159204.0846012,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 5.249999999999999,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159204319",
+      "at": 1782159204.3197389,
+      "type": "person",
+      "reason": "api-person",
+      "position": {
+        "x": 5.599999999999999,
+        "y": 1.7,
+        "z": 0.0,
+        "confidence": 1.0,
+        "source": "manual"
+      }
+    },
+    {
+      "id": "evt-1782159733162",
+      "at": 1782159733.162016,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782159734343",
+      "at": 1782159734.343285,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782159868164",
+      "at": 1782159868.1646762,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "",
+        "preview_mode": "placeholder"
+      }
+    },
+    {
+      "id": "evt-1782159980342",
+      "at": 1782159980.3426912,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "",
+        "preview_mode": "placeholder"
+      }
+    },
+    {
+      "id": "evt-1782160000404",
+      "at": 1782160000.40415,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "",
+        "preview_mode": "placeholder"
+      }
+    },
+    {
+      "id": "evt-1782160234110",
+      "at": 1782160234.110997,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-b",
+      "camera": {
+        "id": "cam-b",
+        "name": "Camera B",
+        "stream_url": "",
+        "preview_mode": "placeholder"
+      }
+    },
+    {
+      "id": "evt-1782160234115",
+      "at": 1782160234.1153688,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782160235269",
+      "at": 1782160235.269166,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "",
+        "preview_mode": "placeholder"
+      }
+    },
+    {
+      "id": "evt-1782160235280",
+      "at": 1782160235.280311,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782160238641",
+      "at": 1782160238.6415749,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-b",
+      "camera": {
+        "id": "cam-b",
+        "name": "Camera B",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160238652",
+      "at": 1782160238.652968,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782160244034",
+      "at": 1782160244.034894,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160244040",
+      "at": 1782160244.040203,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782160272948",
+      "at": 1782160272.9481258,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-b",
+      "camera": {
+        "id": "cam-b",
+        "name": "Camera B",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160272954",
+      "at": 1782160272.954796,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782160275069",
+      "at": 1782160275.069249,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160275075",
+      "at": 1782160275.075723,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782160344380",
+      "at": 1782160344.380333,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-b",
+      "camera": {
+        "id": "cam-b",
+        "name": "Camera B",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160344386",
+      "at": 1782160344.386952,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782160530185",
+      "at": 1782160530.1856372,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160530190",
+      "at": 1782160530.19045,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782160531868",
+      "at": 1782160531.868242,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-b",
+      "camera": {
+        "id": "cam-b",
+        "name": "Camera B",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160531881",
+      "at": 1782160531.881999,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782160812886",
+      "at": 1782160812.886271,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160812890",
+      "at": 1782160812.890923,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782160815027",
+      "at": 1782160815.027919,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-b",
+      "camera": {
+        "id": "cam-b",
+        "name": "Camera B",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160815041",
+      "at": 1782160815.041318,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782160824741",
+      "at": 1782160824.741802,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160824746",
+      "at": 1782160824.7466722,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782160825908",
+      "at": 1782160825.908145,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-b",
+      "camera": {
+        "id": "cam-b",
+        "name": "Camera B",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160825924",
+      "at": 1782160825.924692,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-b",
+      "camera_name": "Camera B"
+    },
+    {
+      "id": "evt-1782160830541",
+      "at": 1782160830.5417442,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160830559",
+      "at": 1782160830.5599911,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782160949871",
+      "at": 1782160949.8710122,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "cam-a",
+      "camera": {
+        "id": "cam-a",
+        "name": "Camera A",
+        "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+        "preview_mode": "mjpeg"
+      }
+    },
+    {
+      "id": "evt-1782160949877",
+      "at": 1782160949.877482,
+      "type": "switch",
+      "reason": "manual-select",
+      "camera_id": "cam-a",
+      "camera_name": "Camera A"
+    }
+  ]
 }

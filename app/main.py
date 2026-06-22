@@ -1,24 +1,29 @@
 from __future__ import annotations
 
 import shutil
+import time
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import STATIC_DIR, STATE_FILE
-from app.models import CameraUpsert, MarkerDetection, PersonUpdate, SeedPayload, SettingsUpdate, ZoneUpsert
-from app.marker_scanner import MarkerScannerService
+from app.models import CameraSelect, CameraUpsert, PersonUpdate, SeedPayload, SettingsUpdate, ZoneUpsert
 from app.store import StateStore
-from app.streaming import PreviewManager, stream_mjpeg
+from app.streaming import PreviewManager, probe_stream_url, stream_mjpeg
 
 
 app = FastAPI(title="Third Person View Prototype")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+STREAM_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "X-Accel-Buffering": "no",
+}
+
 store = StateStore(STATE_FILE)
 preview_manager = PreviewManager()
-marker_scanner = MarkerScannerService(store)
 
 store.load()
 store.set_ffmpeg_available(shutil.which("ffmpeg") is not None)
@@ -37,11 +42,6 @@ def monitor():
 @app.get("/headset")
 def headset():
     return FileResponse(STATIC_DIR / "headset.html")
-
-
-@app.get("/marker-sheet")
-def marker_sheet():
-    return FileResponse(STATIC_DIR / "marker-sheet.html")
 
 
 @app.get("/manifest.webmanifest")
@@ -67,10 +67,10 @@ def get_active_camera():
     return JSONResponse({"camera": active_camera.model_dump(), "active_camera_id": store.active_camera_id})
 
 
-@app.post("/api/marker-detection")
-def marker_detection(payload: MarkerDetection):
+@app.post("/api/active-camera")
+def set_active_camera(payload: CameraSelect):
     try:
-        snapshot = store.detect_marker(payload, "api-marker")
+        snapshot = store.select_camera(payload, "manual-select")
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     return JSONResponse(snapshot)
@@ -90,6 +90,29 @@ def simulate(payload: PersonUpdate):
 def upsert_camera(payload: CameraUpsert):
     camera = store.upsert_camera(payload)
     return JSONResponse({"ok": True, "camera": camera.model_dump()})
+
+
+@app.post("/api/cameras/{camera_id}/activate")
+def activate_camera(camera_id: str, payload: CameraUpsert):
+    camera_payload = payload.model_copy(update={"id": camera_id})
+    probe = probe_stream_url(camera_payload.stream_url)
+    store.set_camera_status(
+        camera_id,
+        {
+            "reachable": bool(probe["reachable"]),
+            "checked_at": time.time(),
+            "error": probe.get("error", ""),
+            "transport": probe.get("transport", ""),
+        },
+    )
+    if not probe["reachable"] and camera_payload.stream_url:
+        raise HTTPException(status_code=422, detail=f"camera stream not reachable: {probe.get('error', 'unknown error')}")
+    camera = store.upsert_camera(camera_payload)
+    try:
+        snapshot = store.select_camera(CameraSelect(camera_id=camera.id), "manual-select")
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+    return JSONResponse({"ok": True, "camera": camera.model_dump(), "probe": probe, "state": snapshot})
 
 
 @app.post("/api/zones")
@@ -123,10 +146,12 @@ def preview(camera_id: str):
         raise HTTPException(status_code=404, detail="camera not found")
     if not camera.stream_url or not store.ffmpeg_available:
         raise HTTPException(status_code=409, detail="preview unavailable")
-    streamer = preview_manager.get(camera)
+    transport = store.camera_statuses.get(camera_id, {}).get("transport", "auto")
+    streamer = preview_manager.get(camera, transport)
     return StreamingResponse(
         stream_mjpeg(streamer),
         media_type="multipart/x-mixed-replace; boundary=frame",
+        headers=STREAM_HEADERS,
     )
 
 
@@ -137,23 +162,15 @@ def active_preview():
         raise HTTPException(status_code=404, detail="no active camera")
     if not active_camera.stream_url or not store.ffmpeg_available:
         raise HTTPException(status_code=409, detail="preview unavailable")
-    streamer = preview_manager.get(active_camera)
+    transport = store.camera_statuses.get(active_camera.id, {}).get("transport", "auto")
+    streamer = preview_manager.get(active_camera, transport)
     return StreamingResponse(
         stream_mjpeg(streamer),
         media_type="multipart/x-mixed-replace; boundary=frame",
+        headers=STREAM_HEADERS,
     )
 
 
 @app.get("/healthz")
 def healthz():
     return {"ok": True}
-
-
-@app.on_event("startup")
-def startup_marker_scanner():
-    marker_scanner.start()
-
-
-@app.on_event("shutdown")
-def shutdown_marker_scanner():
-    marker_scanner.stop()

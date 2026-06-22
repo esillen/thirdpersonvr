@@ -19,10 +19,6 @@ class Camera(BaseModel):
     name: str
     stream_url: str = ""
     preview_mode: Literal["placeholder", "mjpeg"] = "placeholder"
-    position_x: float = 0
-    position_y: float = 2.4
-    position_z: float = 0
-    color: str = "#78c8ff"
 
 
 class Zone(BaseModel):
@@ -44,11 +40,6 @@ class Person(BaseModel):
 class Settings(BaseModel):
     switch_cooldown_ms: int = 700
     idle_fallback_camera_id: str = "cam-a"
-    apriltag_family: str = "tagStandard41h12"
-    apriltag_scan_interval_s: float = 1.0
-    apriltag_capture_width: int = 640
-    apriltag_capture_height: int = 360
-    apriltag_min_decision_margin: float = 20.0
 
 
 class PersonUpdate(BaseModel):
@@ -64,10 +55,6 @@ class CameraUpsert(BaseModel):
     name: str = "Camera"
     stream_url: str = ""
     preview_mode: Literal["placeholder", "mjpeg"] = "placeholder"
-    position_x: float = 0
-    position_y: float = 2.4
-    position_z: float = 0
-    color: str = "#78c8ff"
 
 
 class ZoneUpsert(BaseModel):
@@ -81,11 +68,6 @@ class ZoneUpsert(BaseModel):
 class SettingsUpdate(BaseModel):
     switch_cooldown_ms: Optional[int] = None
     idle_fallback_camera_id: Optional[str] = None
-    apriltag_family: Optional[str] = None
-    apriltag_scan_interval_s: Optional[float] = None
-    apriltag_capture_width: Optional[int] = None
-    apriltag_capture_height: Optional[int] = None
-    apriltag_min_decision_margin: Optional[float] = None
 
 
 class SeedPayload(BaseModel):
@@ -93,8 +75,5 @@ class SeedPayload(BaseModel):
     zones: list[ZoneUpsert] = Field(default_factory=list)
 
 
-class MarkerDetection(BaseModel):
+class CameraSelect(BaseModel):
     camera_id: str
-    marker_id: str = "head-marker"
-    confidence: float = 1.0
-    source: str = "camera"

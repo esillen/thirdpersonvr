@@ -8,20 +8,12 @@ def default_cameras() -> list[Camera]:
             name="Camera A",
             stream_url="",
             preview_mode="placeholder",
-            position_x=0,
-            position_y=2.4,
-            position_z=0,
-            color="#f97316",
         ),
         Camera(
             id="cam-b",
             name="Camera B",
             stream_url="",
             preview_mode="placeholder",
-            position_x=6,
-            position_y=2.4,
-            position_z=0,
-            color="#38bdf8",
         ),
     ]
 
@@ -58,4 +50,3 @@ def default_person() -> Person:
 
 def default_settings() -> Settings:
     return Settings()
-

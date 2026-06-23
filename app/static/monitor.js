@@ -8,7 +8,6 @@ const els = {
 
 let state = null;
 let initialRenderDone = false;
-let laptopDevices = [];
 const peerConnections = new Map();
 
 const format = new Intl.DateTimeFormat(undefined, {
@@ -22,22 +21,17 @@ const slotDefinitions = [
   { id: "cam-b", label: "Camera 2" }
 ];
 
-async function request(path, options = {}) {
-  const response = await fetch(path, {
-    headers: { "content-type": "application/json" },
+function request(path, options = {}) {
+  return fetch(path, {
+    headers: options.body ? { "content-type": "application/json" } : {},
     ...options
+  }).then(async (response) => {
+    if (!response.ok) {
+      const body = await response.json().catch(async () => ({ detail: await response.text().catch(() => "") }));
+      throw new Error(body?.detail || `${response.status} ${response.statusText}`);
+    }
+    return response.json();
   });
-  if (!response.ok) {
-    const body = await response.json().catch(async () => ({ detail: await response.text().catch(() => "") }));
-    const message = body?.detail || `${response.status} ${response.statusText}`;
-    throw new Error(message);
-  }
-  return response.json();
-}
-
-async function loadLaptopDevices() {
-  const payload = await request("/api/webrtc/laptop-camera/devices");
-  laptopDevices = payload.devices || [];
 }
 
 function fallbackCamera(slot) {
@@ -45,6 +39,7 @@ function fallbackCamera(slot) {
     id: slot.id,
     name: slot.label,
     source_kind: slot.id === "laptop-camera" ? "laptop" : "rtsp",
+    camera_backend: "avfoundation",
     stream_url: "",
     avfoundation_device: "0"
   };
@@ -116,14 +111,6 @@ function renderLaptopCameraCard() {
     state?.cameras?.find((item) => item.id === "laptop-camera") ??
     fallbackCamera({ id: "laptop-camera", label: "Laptop camera" });
   const active = camera.id === state.active_camera_id;
-  const options = laptopDevices.length
-    ? laptopDevices
-        .map(
-          (device) =>
-            `<option value="${escapeHtml(device.index)}" ${device.index === camera.avfoundation_device ? "selected" : ""}>${escapeHtml(device.label)} (${escapeHtml(device.index)})</option>`
-        )
-        .join("")
-    : `<option value="${escapeHtml(camera.avfoundation_device)}" selected>Camera ${escapeHtml(camera.avfoundation_device)}</option>`;
   els.laptopCameraCard.innerHTML = `
     <section class="camera-card camera-card-single" data-camera-id="${camera.id}">
       ${previewMarkup()}
@@ -133,17 +120,22 @@ function renderLaptopCameraCard() {
           <span>${camera.id}</span>
         </div>
         <label>
-          Camera device
-          <select data-field="avfoundation_device">
-            ${options}
+          Camera backend
+          <select data-field="camera_backend">
+            <option value="avfoundation" ${camera.camera_backend === "avfoundation" ? "selected" : ""}>avfoundation</option>
+            <option value="dshow" ${camera.camera_backend === "dshow" ? "selected" : ""}>dshow</option>
+            <option value="v4l2" ${camera.camera_backend === "v4l2" ? "selected" : ""}>v4l2</option>
           </select>
         </label>
         <label>
-          Manual index
-          <input data-field="avfoundation_device_manual" value="${escapeHtml(camera.avfoundation_device || "0")}" />
+          Camera device
+          <input
+            data-field="avfoundation_device"
+            value="${escapeHtml(camera.avfoundation_device || "0")}"
+            placeholder="${camera.camera_backend === "dshow" ? "video=Integrated Camera" : camera.camera_backend === "v4l2" ? "/dev/video0" : "0"}"
+          />
         </label>
         <div class="camera-actions">
-          <button class="ghost refresh-laptop-devices" type="button">Refresh devices</button>
           <button class="primary use-laptop-camera" data-camera-id="${camera.id}" ${active ? "disabled" : ""}>
             ${active ? "Using laptop camera" : "Use laptop camera"}
           </button>
@@ -161,7 +153,7 @@ function updateStatus() {
 }
 
 function cameraKey(camera) {
-  return `${camera.source_kind}:${camera.stream_url || ""}:${camera.avfoundation_device || ""}`;
+  return `${camera.id}:${camera.source_kind}:${camera.camera_backend || ""}:${camera.stream_url || ""}:${camera.avfoundation_device || ""}`;
 }
 
 async function connectCameraPreview(card, camera) {
@@ -282,30 +274,16 @@ function syncLaptopCard() {
   if (!card) return;
   const heading = card.querySelector(".camera-card-head strong");
   const button = card.querySelector("button.use-laptop-camera");
-  const deviceSelect = card.querySelector('select[data-field="avfoundation_device"]');
-  const manualInput = card.querySelector('input[data-field="avfoundation_device_manual"]');
+  const backendSelect = card.querySelector('select[data-field="camera_backend"]');
+  const deviceInput = card.querySelector('input[data-field="avfoundation_device"]');
   if (heading) {
     heading.textContent = `Laptop camera${camera.id === state.active_camera_id ? " · active" : ""}`;
   }
-  if (deviceSelect && document.activeElement !== deviceSelect) {
-    const available = laptopDevices.some((device) => device.index === camera.avfoundation_device);
-    deviceSelect.innerHTML = laptopDevices.length
-      ? laptopDevices
-          .map(
-            (device) =>
-              `<option value="${escapeHtml(device.index)}" ${device.index === camera.avfoundation_device ? "selected" : ""}>${escapeHtml(device.label)} (${escapeHtml(device.index)})</option>`
-          )
-          .join("")
-      : `<option value="${escapeHtml(camera.avfoundation_device)}" selected>Camera ${escapeHtml(camera.avfoundation_device)}</option>`;
-    if (!available && laptopDevices.length) {
-      deviceSelect.insertAdjacentHTML(
-        "afterbegin",
-        `<option value="${escapeHtml(camera.avfoundation_device)}" selected>Current ${escapeHtml(camera.avfoundation_device)}</option>`
-      );
-    }
+  if (backendSelect && document.activeElement !== backendSelect) {
+    backendSelect.value = camera.camera_backend || "avfoundation";
   }
-  if (manualInput && document.activeElement !== manualInput) {
-    manualInput.value = camera.avfoundation_device || "0";
+  if (deviceInput && document.activeElement !== deviceInput) {
+    deviceInput.value = camera.avfoundation_device || "0";
   }
   if (button) {
     button.disabled = camera.id === state.active_camera_id;
@@ -337,20 +315,18 @@ async function loadState({ rerender = false } = {}) {
 function readCameraForm(cameraId) {
   const card = els.cameraGrid.querySelector(`[data-camera-id="${cameraId}"]`);
   if (!card) return null;
-  const name = card.querySelector('[data-field="name"]')?.value.trim() || "Camera";
-  const streamUrl = card.querySelector('[data-field="stream_url"]')?.value.trim() || "";
   return {
     id: cameraId,
-    name,
-    stream_url: streamUrl
+    name: card.querySelector('[data-field="name"]')?.value.trim() || "Camera",
+    stream_url: card.querySelector('[data-field="stream_url"]')?.value.trim() || ""
   };
 }
 
-function readLaptopDevice() {
+function readLaptopForm() {
   const card = els.laptopCameraCard?.querySelector('[data-camera-id="laptop-camera"]');
-  const deviceSelect = card?.querySelector('select[data-field="avfoundation_device"]');
-  const manualInput = card?.querySelector('input[data-field="avfoundation_device_manual"]');
-  return manualInput?.value?.trim() || deviceSelect?.value?.trim() || "0";
+  const backend = card?.querySelector('select[data-field="camera_backend"]')?.value?.trim() || "avfoundation";
+  const device = card?.querySelector('input[data-field="avfoundation_device"]')?.value?.trim() || "0";
+  return { camera_backend: backend, avfoundation_device: device };
 }
 
 async function saveAndShow(cameraId) {
@@ -366,9 +342,7 @@ async function saveAndShow(cameraId) {
 async function useLaptopCamera() {
   await request("/api/laptop-camera/activate", {
     method: "POST",
-    body: JSON.stringify({
-      avfoundation_device: readLaptopDevice()
-    })
+    body: JSON.stringify(readLaptopForm())
   });
   await loadState();
 }
@@ -381,21 +355,8 @@ function bindControls() {
   });
 
   els.laptopCameraCard?.addEventListener("click", (event) => {
-    const refresh = event.target.closest("button.refresh-laptop-devices");
-    if (refresh) {
-      loadLaptopDevices()
-        .then(() => loadState({ rerender: true }))
-        .catch(reportError);
-      return;
-    }
     const button = event.target.closest("button.use-laptop-camera");
     if (!button) return;
-    useLaptopCamera().catch(reportError);
-  });
-
-  els.laptopCameraCard?.addEventListener("change", (event) => {
-    const select = event.target.closest('select[data-field="avfoundation_device"]');
-    if (!select) return;
     useLaptopCamera().catch(reportError);
   });
 }
@@ -408,18 +369,6 @@ bindControls();
 
 async function init() {
   await loadState({ rerender: true });
-  loadLaptopDevices()
-    .then(() => {
-      if (initialRenderDone) {
-        syncLaptopCard();
-      }
-    })
-    .catch(() => {
-      laptopDevices = [];
-      if (initialRenderDone) {
-        syncLaptopCard();
-      }
-    });
   setInterval(() => {
     loadState().catch(() => {});
   }, 1500);

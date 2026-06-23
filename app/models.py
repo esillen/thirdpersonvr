@@ -18,6 +18,7 @@ class Camera(BaseModel):
     id: str
     name: str
     source_kind: Literal["rtsp", "laptop"] = "rtsp"
+    camera_backend: Literal["avfoundation", "dshow", "v4l2"] = "avfoundation"
     stream_url: str = ""
     avfoundation_device: str = "0"
 
@@ -55,6 +56,7 @@ class CameraUpsert(BaseModel):
     id: Optional[str] = None
     name: str = "Camera"
     source_kind: Literal["rtsp", "laptop"] = "rtsp"
+    camera_backend: Literal["avfoundation", "dshow", "v4l2"] = "avfoundation"
     stream_url: str = ""
     avfoundation_device: str = "0"
 
@@ -87,4 +89,5 @@ class WebRTCOffer(BaseModel):
 
 
 class LaptopCameraUpdate(BaseModel):
+    camera_backend: Literal["avfoundation", "dshow", "v4l2"] = "avfoundation"
     avfoundation_device: str = "0"

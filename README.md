@@ -25,8 +25,9 @@ Open `http://localhost:3000/headset` for the headset-only PWA view.
 
 - Add or edit the two camera slots from the monitor page
 - Paste an RTSP stream URL if the stream is not discovered automatically, then click `Save & show on headset`
-- Use the `Laptop camera` card to choose a server-side camera device and test the live stream
-- If the laptop camera fails to open, grant camera permission to the terminal/app running `uvicorn`
+- Use the `Laptop camera` card to choose a server-side camera backend and device manually
+- On macOS, the backend is `avfoundation`; on Windows, use `dshow`; on Linux, use `v4l2`
+- If the laptop camera fails to open, make sure the app running `uvicorn` has camera access and that the device selector matches the platform
 - The headset page registers a service worker and manifest so it can act as a PWA
 
 ## Editing the prototype

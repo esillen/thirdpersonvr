@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import platform
 import threading
 import time
 from dataclasses import dataclass, field
@@ -9,7 +10,6 @@ from typing import Literal
 
 from aiortc import MediaStreamError, MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaPlayer, MediaRelay
-import av
 from av import VideoFrame
 from pydantic import BaseModel
 
@@ -18,7 +18,6 @@ from app.models import Camera
 VIDEO_WIDTH = 854
 VIDEO_HEIGHT = 480
 VIDEO_FPS = 10
-AVFOUNDATION_SCAN_LIMIT = 10
 
 
 class WebRTCOffer(BaseModel):
@@ -61,24 +60,42 @@ class ThrottledResizeVideoTrack(MediaStreamTrack):
 
 def _camera_source_key(camera: Camera) -> str:
     if camera.source_kind == "laptop":
-        return f"{camera.id}:laptop:{camera.avfoundation_device or '0'}"
+        return f"{camera.id}:laptop:{camera.camera_backend}:{camera.avfoundation_device or '0'}"
     return f"{camera.id}:rtsp:{camera.stream_url}"
+
+
+def _default_laptop_backend() -> str:
+    system = platform.system()
+    if system == "Windows":
+        return "dshow"
+    if system == "Linux":
+        return "v4l2"
+    return "avfoundation"
 
 
 def _camera_player(camera: Camera) -> MediaPlayer:
     if camera.source_kind == "laptop":
+        backend = camera.camera_backend or _default_laptop_backend()
         device = camera.avfoundation_device or "0"
         options = {"video_size": f"{VIDEO_WIDTH}x{VIDEO_HEIGHT}", "framerate": str(VIDEO_FPS)}
-        attempts = [f"{device}:none", device, "default:none"]
+        if backend == "avfoundation":
+            attempts = [f"{device}:none", device, "default:none"]
+        elif backend == "dshow":
+            normalized = device if device.startswith("video=") else f"video={device}"
+            attempts = [normalized, device]
+        elif backend == "v4l2":
+            attempts = [device]
+        else:
+            raise RuntimeError(f"unsupported laptop camera backend: {backend}")
         last_error: Exception | None = None
         for input_name in attempts:
             try:
-                return MediaPlayer(input_name, format="avfoundation", options=options, timeout=5)
+                return MediaPlayer(input_name, format=backend, options=options, timeout=5)
             except Exception as error:  # noqa: BLE001
                 last_error = error
         raise RuntimeError(
             "laptop camera unavailable on the server. "
-            "Grant camera permission to the app running uvicorn, or set avfoundation_device to a valid camera index. "
+            f"Use the {backend} backend with a valid device selector. "
             f"Last error: {last_error}"
         )
 
@@ -96,20 +113,6 @@ def _camera_player(camera: Camera) -> MediaPlayer:
         )
     except Exception as error:  # noqa: BLE001
         raise RuntimeError(f"camera stream unavailable: {error}") from error
-
-
-def list_avfoundation_devices(limit: int = AVFOUNDATION_SCAN_LIMIT) -> list[dict[str, str]]:
-    discovered: list[dict[str, str]] = []
-    options = {"video_size": f"{VIDEO_WIDTH}x{VIDEO_HEIGHT}", "framerate": str(VIDEO_FPS)}
-    for index in range(limit):
-        device = str(index)
-        try:
-            container = av.open(file=f"{device}:none", format="avfoundation", mode="r", options=options)
-            discovered.append({"index": device, "label": f"Camera {device}"})
-            container.close()
-        except Exception:
-            continue
-    return discovered
 
 
 @dataclass

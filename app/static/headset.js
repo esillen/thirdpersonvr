@@ -26,7 +26,7 @@ async function request(path, options = {}) {
 }
 
 function cameraSignature(camera) {
-  return `${camera.id}:${camera.source_kind}:${camera.stream_url || ""}:${camera.avfoundation_device || ""}`;
+  return `${camera.id}:${camera.source_kind}:${camera.camera_backend || ""}:${camera.stream_url || ""}:${camera.avfoundation_device || ""}`;
 }
 
 function setFallback(message) {

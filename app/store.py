@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import platform
 import threading
 import time
 from pathlib import Path
@@ -15,12 +16,21 @@ def _dump(model):
     return model.model_dump()
 
 
+def _default_laptop_backend() -> str:
+    if platform.system() == "Windows":
+        return "dshow"
+    if platform.system() == "Linux":
+        return "v4l2"
+    return "avfoundation"
+
+
 def _camera_from_upsert(payload: CameraUpsert) -> Camera:
     camera_id = payload.id or f"cam-{int(time.time() * 1000)}"
     return Camera(
         id=camera_id,
         name=payload.name,
         source_kind=payload.source_kind,
+        camera_backend=payload.camera_backend,
         stream_url=payload.stream_url,
         avfoundation_device=payload.avfoundation_device,
     )
@@ -36,6 +46,7 @@ def _normalize_camera_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "id": payload.get("id", f"cam-{int(time.time() * 1000)}"),
         "name": payload.get("name", "Camera"),
         "source_kind": payload.get("source_kind", payload.get("sourceKind", "rtsp")),
+        "camera_backend": payload.get("camera_backend", payload.get("cameraBackend", _default_laptop_backend())),
         "stream_url": payload.get("stream_url", payload.get("streamUrl", "")),
         "avfoundation_device": payload.get("avfoundation_device", payload.get("avfoundationDevice", "0")),
     }
@@ -87,6 +98,12 @@ class StateStore:
             if camera_items is None:
                 camera_items = _dump_list(default_cameras())
             self.cameras = [Camera(**_normalize_camera_payload(item)) for item in camera_items]
+            self.cameras = [
+                camera.model_copy(update={"camera_backend": camera.camera_backend or _default_laptop_backend()})
+                if camera.source_kind == "laptop"
+                else camera
+                for camera in self.cameras
+            ]
 
             zone_items = payload.get("zones")
             if zone_items is None:

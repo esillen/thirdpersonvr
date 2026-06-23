@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import platform
+
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -7,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import STATIC_DIR, STATE_FILE
 from app.models import CameraSelect, CameraUpsert, LaptopCameraUpdate, PersonUpdate, SeedPayload, SettingsUpdate, ZoneUpsert
 from app.store import StateStore
-from app.webrtc import WebRTCManager, WebRTCOffer, list_avfoundation_devices
+from app.webrtc import WebRTCManager, WebRTCOffer
 
 
 app = FastAPI(title="Third Person View Prototype")
@@ -101,22 +103,21 @@ def activate_camera(camera_id: str, payload: CameraUpsert):
 
 @app.post("/api/laptop-camera/activate")
 def activate_laptop_camera(payload: LaptopCameraUpdate | None = None):
+    backend = payload.camera_backend if payload else (
+        "dshow" if platform.system() == "Windows" else "v4l2" if platform.system() == "Linux" else "avfoundation"
+    )
     device = (payload.avfoundation_device if payload else "0") or "0"
     camera_payload = CameraUpsert(
         id="laptop-camera",
         name="Laptop Camera",
         source_kind="laptop",
+        camera_backend=backend,
         avfoundation_device=device,
         stream_url="",
     )
     camera = store.upsert_camera(camera_payload)
     snapshot = store.select_camera(CameraSelect(camera_id=camera.id), "laptop-camera")
     return JSONResponse({"ok": True, "camera": camera.model_dump(), "state": snapshot})
-
-
-@app.get("/api/webrtc/laptop-camera/devices")
-def get_laptop_camera_devices():
-    return JSONResponse({"devices": list_avfoundation_devices()})
 
 
 @app.post("/api/webrtc/cameras/{camera_id}/offer")

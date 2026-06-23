@@ -6,14 +6,16 @@ def default_cameras() -> list[Camera]:
         Camera(
             id="cam-a",
             name="Camera A",
+            source_kind="rtsp",
             stream_url="",
-            preview_mode="placeholder",
+            avfoundation_device="0",
         ),
         Camera(
             id="cam-b",
             name="Camera B",
+            source_kind="rtsp",
             stream_url="",
-            preview_mode="placeholder",
+            avfoundation_device="0",
         ),
     ]
 

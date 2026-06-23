@@ -1,4 +1,4 @@
-const CACHE_NAME = "third-person-view-headset-v1";
+const CACHE_NAME = "third-person-view-headset-v2";
 const APP_SHELL = ["/headset", "/static/headset.css", "/static/headset.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -21,7 +21,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(request).catch(() => caches.match("/headset")));
     return;
   }
-  if (request.url.includes("/api/active-camera/preview.mjpg")) {
+  if (request.url.includes("/api/webrtc/")) {
     event.respondWith(fetch(request));
     return;
   }

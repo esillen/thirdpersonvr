@@ -17,8 +17,9 @@ class Box(BaseModel):
 class Camera(BaseModel):
     id: str
     name: str
+    source_kind: Literal["rtsp", "laptop"] = "rtsp"
     stream_url: str = ""
-    preview_mode: Literal["placeholder", "mjpeg"] = "placeholder"
+    avfoundation_device: str = "0"
 
 
 class Zone(BaseModel):
@@ -53,8 +54,9 @@ class PersonUpdate(BaseModel):
 class CameraUpsert(BaseModel):
     id: Optional[str] = None
     name: str = "Camera"
+    source_kind: Literal["rtsp", "laptop"] = "rtsp"
     stream_url: str = ""
-    preview_mode: Literal["placeholder", "mjpeg"] = "placeholder"
+    avfoundation_device: str = "0"
 
 
 class ZoneUpsert(BaseModel):
@@ -77,3 +79,12 @@ class SeedPayload(BaseModel):
 
 class CameraSelect(BaseModel):
     camera_id: str
+
+
+class WebRTCOffer(BaseModel):
+    sdp: str
+    type: Literal["offer"] = "offer"
+
+
+class LaptopCameraUpdate(BaseModel):
+    avfoundation_device: str = "0"

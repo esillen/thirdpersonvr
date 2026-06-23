@@ -14,9 +14,8 @@
           <p class="eyebrow">Monitor client</p>
           <h1>Two camera feeds, one headset.</h1>
           <p class="lede">
-            Keep the monitor simple: configure two feeds, preview them live, and pick which one the headset
-            should show. If camera discovery does not find a stream automatically, paste the stream address
-            in the field below and press “Save & show on headset”; the server will probe it first.
+            Configure two camera feeds, watch both live, and pick which one the headset should show.
+            If discovery does not find a camera automatically, paste the stream address below and save it.
           </p>
         </div>
         <div class="status-panel">
@@ -30,7 +29,7 @@
           </div>
           <div>
             <span class="label">Server</span>
-            <strong id="ffmpegState">-</strong>
+            <strong id="serverState">WebRTC</strong>
           </div>
         </div>
       </header>
@@ -42,11 +41,16 @@
             <span class="pill">Select one for the headset</span>
           </div>
           <div id="cameraGrid" class="camera-grid"></div>
-          <p class="hint">
-            Paste a stream URL for each camera if the server cannot discover it automatically over ONVIF.
-            RTSP and MJPEG addresses both work for previews. The button validates the stream, saves it, and
-            applies it to the headset.
-          </p>
+          <p class="hint">Paste a stream URL if discovery does not find the camera automatically.</p>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <h2>Laptop camera</h2>
+            <span class="pill">Local fallback</span>
+          </div>
+          <div id="laptopCameraCard" class="camera-grid-single"></div>
+          <p class="hint">Use the built-in camera on the server machine as a backup feed.</p>
         </article>
       </section>
     </main>

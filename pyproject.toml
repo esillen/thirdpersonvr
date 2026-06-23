@@ -8,4 +8,6 @@ dependencies = [
   "uvicorn[standard]",
   "pydantic",
   "numpy",
+  "aiortc>=1.14.0",
+  "av>=16.1.0",
 ]

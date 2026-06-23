@@ -1,32 +1,28 @@
 from __future__ import annotations
 
-import shutil
-import time
-
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import STATIC_DIR, STATE_FILE
-from app.models import CameraSelect, CameraUpsert, PersonUpdate, SeedPayload, SettingsUpdate, ZoneUpsert
+from app.models import CameraSelect, CameraUpsert, LaptopCameraUpdate, PersonUpdate, SeedPayload, SettingsUpdate, ZoneUpsert
 from app.store import StateStore
-from app.streaming import PreviewManager, probe_stream_url, stream_mjpeg
+from app.webrtc import WebRTCManager, WebRTCOffer, list_avfoundation_devices
 
 
 app = FastAPI(title="Third Person View Prototype")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-STREAM_HEADERS = {
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache",
-    "X-Accel-Buffering": "no",
-}
-
 store = StateStore(STATE_FILE)
-preview_manager = PreviewManager()
+webrtc_manager = WebRTCManager()
 
 store.load()
-store.set_ffmpeg_available(shutil.which("ffmpeg") is not None)
+store.set_webrtc_available(True)
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await webrtc_manager.close_all()
 
 
 @app.get("/")
@@ -95,24 +91,56 @@ def upsert_camera(payload: CameraUpsert):
 @app.post("/api/cameras/{camera_id}/activate")
 def activate_camera(camera_id: str, payload: CameraUpsert):
     camera_payload = payload.model_copy(update={"id": camera_id})
-    probe = probe_stream_url(camera_payload.stream_url)
-    store.set_camera_status(
-        camera_id,
-        {
-            "reachable": bool(probe["reachable"]),
-            "checked_at": time.time(),
-            "error": probe.get("error", ""),
-            "transport": probe.get("transport", ""),
-        },
-    )
-    if not probe["reachable"] and camera_payload.stream_url:
-        raise HTTPException(status_code=422, detail=f"camera stream not reachable: {probe.get('error', 'unknown error')}")
     camera = store.upsert_camera(camera_payload)
     try:
         snapshot = store.select_camera(CameraSelect(camera_id=camera.id), "manual-select")
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
-    return JSONResponse({"ok": True, "camera": camera.model_dump(), "probe": probe, "state": snapshot})
+    return JSONResponse({"ok": True, "camera": camera.model_dump(), "state": snapshot})
+
+
+@app.post("/api/laptop-camera/activate")
+def activate_laptop_camera(payload: LaptopCameraUpdate | None = None):
+    device = (payload.avfoundation_device if payload else "0") or "0"
+    camera_payload = CameraUpsert(
+        id="laptop-camera",
+        name="Laptop Camera",
+        source_kind="laptop",
+        avfoundation_device=device,
+        stream_url="",
+    )
+    camera = store.upsert_camera(camera_payload)
+    snapshot = store.select_camera(CameraSelect(camera_id=camera.id), "laptop-camera")
+    return JSONResponse({"ok": True, "camera": camera.model_dump(), "state": snapshot})
+
+
+@app.get("/api/webrtc/laptop-camera/devices")
+def get_laptop_camera_devices():
+    return JSONResponse({"devices": list_avfoundation_devices()})
+
+
+@app.post("/api/webrtc/cameras/{camera_id}/offer")
+async def camera_webrtc_offer(camera_id: str, payload: WebRTCOffer):
+    camera = next((item for item in store.cameras if item.id == camera_id), None)
+    if camera is None:
+        raise HTTPException(status_code=404, detail="camera not found")
+    try:
+        answer = await webrtc_manager.create_answer(camera, payload)
+    except RuntimeError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return JSONResponse({"ok": True, "camera_id": camera_id, **answer})
+
+
+@app.post("/api/webrtc/active-camera/offer")
+async def active_camera_webrtc_offer(payload: WebRTCOffer):
+    active_camera = next((item for item in store.cameras if item.id == store.active_camera_id), None)
+    if active_camera is None:
+        raise HTTPException(status_code=404, detail="no active camera")
+    try:
+        answer = await webrtc_manager.create_answer(active_camera, payload)
+    except RuntimeError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return JSONResponse({"ok": True, "camera_id": active_camera.id, **answer})
 
 
 @app.post("/api/zones")
@@ -137,38 +165,6 @@ def seed(payload: SeedPayload):
 def reset():
     store.reset()
     return JSONResponse({"ok": True, "state": store.snapshot("reset")})
-
-
-@app.get("/api/cameras/{camera_id}/preview.mjpg")
-def preview(camera_id: str):
-    camera = next((item for item in store.cameras if item.id == camera_id), None)
-    if camera is None:
-        raise HTTPException(status_code=404, detail="camera not found")
-    if not camera.stream_url or not store.ffmpeg_available:
-        raise HTTPException(status_code=409, detail="preview unavailable")
-    transport = store.camera_statuses.get(camera_id, {}).get("transport", "auto")
-    streamer = preview_manager.get(camera, transport)
-    return StreamingResponse(
-        stream_mjpeg(streamer),
-        media_type="multipart/x-mixed-replace; boundary=frame",
-        headers=STREAM_HEADERS,
-    )
-
-
-@app.get("/api/active-camera/preview.mjpg")
-def active_preview():
-    active_camera = next((item for item in store.cameras if item.id == store.active_camera_id), None)
-    if active_camera is None:
-        raise HTTPException(status_code=404, detail="no active camera")
-    if not active_camera.stream_url or not store.ffmpeg_available:
-        raise HTTPException(status_code=409, detail="preview unavailable")
-    transport = store.camera_statuses.get(active_camera.id, {}).get("transport", "auto")
-    streamer = preview_manager.get(active_camera, transport)
-    return StreamingResponse(
-        stream_mjpeg(streamer),
-        media_type="multipart/x-mixed-replace; boundary=frame",
-        headers=STREAM_HEADERS,
-    )
 
 
 @app.get("/healthz")

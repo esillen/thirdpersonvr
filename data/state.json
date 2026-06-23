@@ -3,14 +3,26 @@
     {
       "id": "cam-a",
       "name": "Camera A",
+      "source_kind": "rtsp",
       "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+      "avfoundation_device": "0",
       "preview_mode": "mjpeg"
     },
     {
       "id": "cam-b",
       "name": "Camera B",
+      "source_kind": "rtsp",
       "stream_url": "rtsp://camera1:camera1234@192.168.1.103:554/stream1",
+      "avfoundation_device": "0",
       "preview_mode": "mjpeg"
+    },
+    {
+      "id": "laptop-camera",
+      "name": "Laptop Camera",
+      "source_kind": "laptop",
+      "stream_url": "",
+      "avfoundation_device": "0",
+      "preview_mode": "placeholder"
     }
   ],
   "zones": [
@@ -75,16 +87,25 @@
     "switch_cooldown_ms": 700,
     "idle_fallback_camera_id": "cam-a"
   },
-  "active_camera_id": "cam-a",
-  "last_switch_at": 1782160949877.476,
-  "last_switch_reason": "manual-select",
+  "active_camera_id": "laptop-camera",
+  "last_switch_at": 1782249521185.181,
+  "last_switch_reason": "laptop-camera",
   "camera_statuses": {
     "cam-b": {
       "camera_id": "cam-b",
       "reachable": false,
-      "checked_at": 1782162398.433902,
-      "error": "auto: [tcp @ 0xafec24000] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host; udp: [tcp @ 0xafd003480] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host; tcp: [tcp @ 0xc1b003480] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host",
-      "transport": ""
+      "checked_at": 1782249512.5968919,
+      "error": "auto: [tcp @ 0x98b003480] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host; udp: [tcp @ 0xb9cc24000] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host; tcp: [tcp @ 0xaab074000] Connection to tcp://192.168.1.103:554?timeout=0 failed: No route to host\nrtsp://camera1:camera1234@192.168.1.103:554/stream1: No route to host",
+      "transport": "",
+      "source_kind": "rtsp"
+    },
+    "laptop-camera": {
+      "camera_id": "laptop-camera",
+      "reachable": true,
+      "checked_at": 1782249521.169827,
+      "error": "",
+      "transport": "avfoundation:0",
+      "source_kind": "laptop"
     }
   },
   "history": [
@@ -691,6 +712,29 @@
       "reason": "manual-select",
       "camera_id": "cam-a",
       "camera_name": "Camera A"
+    },
+    {
+      "id": "evt-1782249521172",
+      "at": 1782249521.172436,
+      "type": "camera",
+      "reason": "upsert",
+      "camera_id": "laptop-camera",
+      "camera": {
+        "id": "laptop-camera",
+        "name": "Laptop Camera",
+        "source_kind": "laptop",
+        "stream_url": "",
+        "avfoundation_device": "0",
+        "preview_mode": "placeholder"
+      }
+    },
+    {
+      "id": "evt-1782249521185",
+      "at": 1782249521.185184,
+      "type": "switch",
+      "reason": "laptop-camera",
+      "camera_id": "laptop-camera",
+      "camera_name": "Laptop Camera"
     }
   ]
 }

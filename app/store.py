@@ -17,7 +17,13 @@ def _dump(model):
 
 def _camera_from_upsert(payload: CameraUpsert) -> Camera:
     camera_id = payload.id or f"cam-{int(time.time() * 1000)}"
-    return Camera(id=camera_id, name=payload.name, stream_url=payload.stream_url, preview_mode=payload.preview_mode)
+    return Camera(
+        id=camera_id,
+        name=payload.name,
+        source_kind=payload.source_kind,
+        stream_url=payload.stream_url,
+        avfoundation_device=payload.avfoundation_device,
+    )
 
 
 def _zone_from_upsert(payload: ZoneUpsert) -> Zone:
@@ -29,8 +35,9 @@ def _normalize_camera_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": payload.get("id", f"cam-{int(time.time() * 1000)}"),
         "name": payload.get("name", "Camera"),
+        "source_kind": payload.get("source_kind", payload.get("sourceKind", "rtsp")),
         "stream_url": payload.get("stream_url", payload.get("streamUrl", "")),
-        "preview_mode": payload.get("preview_mode", payload.get("previewMode", "placeholder")),
+        "avfoundation_device": payload.get("avfoundation_device", payload.get("avfoundationDevice", "0")),
     }
 
 
@@ -66,9 +73,8 @@ class StateStore:
         self.active_camera_id: str = self.cameras[0].id if self.cameras else ""
         self.last_switch_at: float = 0.0
         self.last_switch_reason: str = "initial"
-        self.camera_statuses: dict[str, dict[str, Any]] = {}
         self.history: list[dict[str, Any]] = []
-        self.ffmpeg_available: bool = False
+        self.webrtc_available: bool = False
 
     def load(self) -> None:
         if not self.state_file.exists():
@@ -102,8 +108,8 @@ class StateStore:
             self.last_switch_reason = payload.get(
                 "last_switch_reason", payload.get("lastSwitchReason", self.last_switch_reason)
             )
-            self.camera_statuses = dict(payload.get("camera_statuses", payload.get("cameraStatuses", {})))
             self.history = list(payload.get("history", self.history))[-200:]
+            self.webrtc_available = bool(payload.get("webrtc_available", payload.get("webrtcAvailable", self.webrtc_available)))
 
     def save(self) -> None:
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
@@ -116,8 +122,8 @@ class StateStore:
                 "active_camera_id": self.active_camera_id,
                 "last_switch_at": self.last_switch_at,
                 "last_switch_reason": self.last_switch_reason,
-                "camera_statuses": copy.deepcopy(self.camera_statuses),
                 "history": self.history[-200:],
+                "webrtc_available": self.webrtc_available,
             }
         with self.state_file.open("w", encoding="utf-8") as handle:
             json.dump(payload, handle, indent=2)
@@ -133,9 +139,8 @@ class StateStore:
                 "active_camera_id": self.active_camera_id,
                 "last_switch_at": self.last_switch_at,
                 "last_switch_reason": self.last_switch_reason,
-                "camera_statuses": copy.deepcopy(self.camera_statuses),
                 "history": copy.deepcopy(self.history[-100:]),
-                "ffmpeg_available": self.ffmpeg_available,
+                "webrtc_available": self.webrtc_available,
             }
 
     def record(self, event: dict[str, Any]) -> None:
@@ -143,14 +148,9 @@ class StateStore:
         self.history.append(event)
         self.history = self.history[-200:]
 
-    def set_ffmpeg_available(self, available: bool) -> None:
+    def set_webrtc_available(self, available: bool) -> None:
         with self.lock:
-            self.ffmpeg_available = available
-
-    def set_camera_status(self, camera_id: str, status: dict[str, Any]) -> None:
-        with self.lock:
-            self.camera_statuses[camera_id] = {"camera_id": camera_id, **status}
-            self.save()
+            self.webrtc_available = available
 
     def update_person(self, payload: PersonUpdate, reason: str = "manual") -> dict[str, Any]:
         with self.lock:
@@ -198,7 +198,6 @@ class StateStore:
             self.zones = [_zone_from_upsert(zone) for zone in zones] or default_zones()
             if self.active_camera_id not in {camera.id for camera in self.cameras} and self.cameras:
                 self.active_camera_id = self.cameras[0].id
-            self.camera_statuses = {camera.id: self.camera_statuses.get(camera.id, {}) for camera in self.cameras}
             self.record({"type": "seed", "reason": "seed"})
             self.save()
 
@@ -211,7 +210,6 @@ class StateStore:
             self.active_camera_id = self.cameras[0].id if self.cameras else ""
             self.last_switch_at = 0.0
             self.last_switch_reason = "reset"
-            self.camera_statuses = {}
             self.history = []
             self.save()
 
